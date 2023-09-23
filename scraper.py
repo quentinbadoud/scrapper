@@ -41,8 +41,6 @@ INTERVAL = int(config['DEFAULT']['INTERVAL'])
 NEW_ARTICLES_NOTIF = bool(config['DEFAULT']['NEW_ARTICLES_NOTIF'])
 
 INTERVAL_RANDOMIZE= 400
-recipients_list = ["haxitoo.hamble@gmail.com", "info@autofribourg.ch"]
-recipients_list = ["quentin.badoud2@gmail.com", "quentin.badoud@gmail.com"]
 
 # Vos identifiants Gmail
 # Vos identifiants Gmail
@@ -65,10 +63,10 @@ def convert_chf_to_number(chf_string):
 def send_email(subject, content, isFirstNotif):
     msg = MIMEMultipart("alternative")
     msg["From"] = GMAIL_ADDRESS
-    #msg["To"] = GMAIL_ADDRESS  # ou toute autre adresse e-mail à laquelle vous souhaitez envoyer
-    msg["To"] = ", ".join(recipients_list)  
+    msg["To"] = GMAIL_ADDRESS  # ou toute autre adresse e-mail à laquelle vous souhaitez envoyer
+    #msg["To"] = ", ".join(recipients_list)  
     msg["Subject"] = subject
-    msg["Bcc"] = "quentin.badoud@gmail.com"  # Ajout en copie cachée
+    
     content_style = """
                 table {
                 width: 80%;
