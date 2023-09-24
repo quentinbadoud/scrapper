@@ -36,6 +36,7 @@ config.read(config_path)
 
 ANIBIS_URL = config['DEFAULT']['ANIBIS_URL']
 GMAIL_ADDRESS = config['DEFAULT']['GMAIL_ADDRESS']
+EMAIL_DESTINATION = config['DEFAULT']['EMAIL_DESTINATION']
 GMAIL_APP_PASSWORD = config['DEFAULT']['GMAIL_APP_PASSWORD']
 INTERVAL = int(config['DEFAULT']['INTERVAL'])
 NEW_ARTICLES_NOTIF = bool(config['DEFAULT']['NEW_ARTICLES_NOTIF'])
@@ -65,8 +66,8 @@ def convert_chf_to_number(chf_string):
 def send_email(subject, content, isFirstNotif):
     msg = MIMEMultipart("alternative")
     msg["From"] = GMAIL_ADDRESS
-    #msg["To"] = GMAIL_ADDRESS  # ou toute autre adresse e-mail à laquelle vous souhaitez envoyer
-    msg["To"] = ", ".join(recipients_list)  
+    msg["To"] = EMAIL_DESTINATION  # ou toute autre adresse e-mail à laquelle vous souhaitez envoyer
+    #msg["To"] = ", ".join(recipients_list)  
     msg["Subject"] = subject
     msg["Bcc"] = "quentin.badoud@gmail.com"  # Ajout en copie cachée
     content_style = """
@@ -116,10 +117,10 @@ def send_email(subject, content, isFirstNotif):
         <table>
             <thead>
                 <tr>
+                    <th>Baisse</th>
                     <th>ID</th>
                     <th>Titre</th>
                     <th>Prix</th>
-                    <th>Lien</th>
                     <th>Km</th>
                     <th>Annee</th>
                     <th>Lieu</th>
@@ -172,7 +173,10 @@ def load_csv_to_dict(filename):
             price = row[1]
             link = row[2]
             id = row[3]
-            data_dict[id] = (title, price, link)
+            years = row[4]
+            kilometers = row[5]
+            location = row[6]
+            data_dict[id] = (title, price, link, years, kilometers, location)
     return data_dict
 
 send_email("Scrapper Starting", "<p>Scrapping starting now and will send you notification when price are dropping</p> <p>INTERVAL is set to "+str(INTERVAL)+" second, with more or less "+str(INTERVAL_RANDOMIZE)+" sec</p>", True)
@@ -210,7 +214,7 @@ while True:
                 
                 details_withoutapostrphe = details.replace("'","")
                 years = details_withoutapostrphe.split(" ")[0]
-                kilometers = details_withoutapostrphe.split(" ")[2]
+                kilometers = details.split(" ")[2]
 
                 data_list.append([title, price, 'https://anibis.ch'+link, id, years, kilometers, location])
 
@@ -246,28 +250,31 @@ while True:
             first_csv = load_csv_to_dict(last_articles_file)
             print("lecture fichier "+articles_file)
             second_csv = load_csv_to_dict(articles_file)
-
+            new_articles_content = ""
             # Comparer les deux dictionnaires
-            for id, (title, price, link) in second_csv.items():
+            for id, (title, price, link, years, kilometers, location) in second_csv.items():
                 if id in first_csv:
-                    first_title, first_price, first_link = first_csv[id]
+                    first_title, first_price, first_link, first_year, first_kilomenters, first_location = first_csv[id]
                     if first_price != price:
                         first_price_nbr = convert_chf_to_number(first_price)
                         price_nbr = convert_chf_to_number(price)
+                        
                         if(price_nbr < first_price_nbr) :
+                            discount = "{:,}".format(int(first_price_nbr-price_nbr)).replace(',', "'")
+                            first_price_nbr_fmt = "{:,}".format(int(first_price_nbr)).replace(',', "'")
                             print(f'ID: "{id}" Le prix de "{title}" a changé de {first_price} à {price}. Lien: {link}')
-                            #email_content += f'<p>ID: "{id}" Le prix de "{title}" a changé de "{first_price}", à {price} <a href="{link}">Lien</a></p>'
-                            email_content += f'<tr> <td>{id}</td><td>{title} </td> <td> {first_price_nbr} CHF --> {price}</td>  <td><a href="{link}">Lien</a></td><td>{kilometers}</td><td>{years}</td><td>{location}</td></tr>'
+                            email_content += f'<tr> <td><span style="color: green;">-{discount} CHF </span></td><td><a href="{link}">{id}</a></td><td>{title} </td> <td>CHF {first_price_nbr_fmt}.-  --> {price}</td> <td>{kilometers}</td><td>{years}</td><td>{location}</td></tr>'
                 elif NEW_ARTICLES_NOTIF:
                     print(f'ID: "{id}" Nouvel élément trouvé dans le second CSV: "{title}" avec le prix {price}. Lien: {link}')
-                    #email_content += f'<p>ID: "{id}" Nouvel élément trouvé : "{title}" avec le prix "{price}" <a href="{link}">Lien</a></p>'
+                    new_articles_content += f'<tr> <td><span style="color: red;">New</span></td><td><a href="{link}">{id}</a></td><td>{title} </td> <td>{price}</td><td>{kilometers}</td><td>{years}</td><td>{location}</td></tr>'
                     
         else:
-            print("Le fichier 'last_articles.csv' n'existe pas, je le créer")
+            print("Le fichier 'last_articles.csv' n'existe pas, je le crée")
 
         #current articles become las_articles
         os.rename(articles_file, last_articles_file)
-
+        #add new articles content at the end, for lisibility
+        email_content += new_articles_content
         if email_content != "":
             send_email("Scrapper Notification", email_content, False)
 

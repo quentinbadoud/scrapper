@@ -1,0 +1,13 @@
+2023-09-23 16:55:06,562 - ERROR - Une erreur s'est produite : not enough values to unpack (expected 6, got 3)
+2023-09-23 16:55:14,982 - ERROR - Une erreur s'est produite : not enough values to unpack (expected 6, got 3)
+2023-09-23 16:55:23,178 - ERROR - Une erreur s'est produite : not enough values to unpack (expected 6, got 3)
+2023-09-23 17:09:34,557 - ERROR - Une erreur s'est produite : too many values to unpack (expected 6)
+2023-09-23 17:09:44,979 - ERROR - Une erreur s'est produite : too many values to unpack (expected 6)
+2023-09-23 17:09:54,218 - ERROR - Une erreur s'est produite : too many values to unpack (expected 6)
+2023-09-23 17:10:05,412 - ERROR - Une erreur s'est produite : too many values to unpack (expected 6)
+2023-09-23 17:10:15,600 - ERROR - Une erreur s'est produite : too many values to unpack (expected 6)
+2023-09-23 17:11:19,923 - ERROR - Une erreur s'est produite : too many values to unpack (expected 3)
+2023-09-23 17:11:27,058 - ERROR - Une erreur s'est produite : too many values to unpack (expected 3)
+2023-09-23 17:14:16,780 - ERROR - Une erreur s'est produite : too many values to unpack (expected 3)
+2023-09-23 21:36:41,255 - ERROR - Une erreur s'est produite : name 'd' is not defined
+2023-09-23 21:36:50,863 - ERROR - Une erreur s'est produite : name 'd' is not defined
