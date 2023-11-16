@@ -12,14 +12,10 @@ import configparser
 import logging
 import sys
 import traceback  # Import du module traceback
-
-
 logging.basicConfig(filename='errors.log', level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
 console = logging.StreamHandler()
 logger.addHandler(console)
-
-
 # Get the directory containing your packed program's executable
 #base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 base_path = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -29,23 +25,17 @@ articles_file = os.path.join(base_path, 'articles.csv')
 print("path: "+config_path)
 # Charger le fichier de configuration
 config = configparser.ConfigParser()
-
 config.read(config_path)
-
 # Accéder aux paramètres
-
 ANIBIS_URL = config['DEFAULT']['ANIBIS_URL']
 GMAIL_ADDRESS = config['DEFAULT']['GMAIL_ADDRESS']
 EMAIL_DESTINATION = config['DEFAULT']['EMAIL_DESTINATION']
 GMAIL_APP_PASSWORD = config['DEFAULT']['GMAIL_APP_PASSWORD']
 INTERVAL = int(config['DEFAULT']['INTERVAL'])
 NEW_ARTICLES_NOTIF = bool(config['DEFAULT']['NEW_ARTICLES_NOTIF'])
-
 INTERVAL_RANDOMIZE= 400
-
+recipients_list = ["haxi**.****@gmail.com", "autof********@gmail.com"]
 # Vos identifiants Gmail
-# Vos identifiants Gmail
-
 def convert_chf_to_number(chf_string):
     # Supprimer le préfixe "CHF "
     try:
@@ -58,8 +48,6 @@ def convert_chf_to_number(chf_string):
         return float(number_string)
     except:
         return 0
-
-
 # Fonction pour envoyer un e-mail formaté
 def send_email(subject, content, isFirstNotif):
     msg = MIMEMultipart("alternative")
@@ -67,7 +55,7 @@ def send_email(subject, content, isFirstNotif):
     msg["To"] = EMAIL_DESTINATION  # ou toute autre adresse e-mail à laquelle vous souhaitez envoyer
     #msg["To"] = ", ".join(recipients_list)  
     msg["Subject"] = subject
-    
+    #msg["Bcc"] = "****@gmail.com"  # Ajout en copie cachée
     content_style = """
                 table {
                 width: 80%;
@@ -87,7 +75,6 @@ def send_email(subject, content, isFirstNotif):
                 background-color: #f5f5f5;
             }
     """
-
     # Créer le contenu HTML de l'e-mail
     if isFirstNotif:
         html_content = f"""
@@ -100,7 +87,6 @@ def send_email(subject, content, isFirstNotif):
         """
     else:
         html_content = f"""
-
         <html>
         <head>
             <meta charset="UTF-8">
@@ -160,6 +146,14 @@ def getSoup (url):
     soup = BeautifulSoup(response.content, 'html.parser')
     return soup
 
+#tronque un string de plus de 60 char
+def tronquer_chaine(chaine, longueur_max=60):
+    if len(chaine) > longueur_max:
+        return chaine[:longueur_max] + "..."
+    else:
+        return chaine
+
+
 # Charger le contenu d'un fichier CSV dans un dictionnaire
 def load_csv_to_dict(filename):
     data_dict = {}
@@ -184,7 +178,7 @@ while True:
         #url_base = "https://www.anibis.ch/fr/c/automobiles-voitures-de-tourisme?ae=1&aral=832_0_145000%2C833_2014_"
         url_base = ANIBIS_URL
         url = url_base
-        sleeptime = 3600
+        sleeptime = INTERVAL
         # Step 1: Fetch the webpage content
         page = 1
         hasNextPage = True
@@ -198,25 +192,37 @@ while True:
 
         while hasNextPage:
             print('checking page ' + str(page) + '... url: ' + url)
-            articles = soup.find_all('article')
-            nextButton = soup.find_all('div', class_='sc-1d4mdus-0 eMiYgt')
+            articles = soup.find_all('div', class_='mui-style-1qqsbdq')
+            nextButton = soup.find_all('button', {'aria-label': 'Go to next page', 'class': 'Mui-disabled'})
+
 
             # Boucle sur chaque article pour extraire les données
             for article in articles:
-                title = article.find('div', class_='lwk7wa-0 bVsXyN').text.strip() if article.find('div', class_='lwk7wa-0 bVsXyN')else None
-                price = article.find('div', class_='sc-1holcpr-0 leZeeB').text.strip() if article.find('div', class_='sc-1holcpr-0 leZeeB') else None
-                link = article.find('a', class_='sc-1yo7ctu-0 bRDNul')['href'] if article.find('a', class_='sc-1yo7ctu-0 bRDNul') else None
-                details = article.find('div', class_='yd8154-0 jLDIPt').text.strip() if article.find('div', class_='yd8154-0 jLDIPt') else None
-                location = article.find('div', class_='sc-114vkp9-0 wzCeg').text.strip() if article.find('div', class_='sc-114vkp9-0 wzCeg') else None
-                id = article['id'].split('card_')[1]
-                
-                details_withoutapostrphe = details.replace("'","")
-                years = details_withoutapostrphe.split(" ")[0]
-                kilometers = details.split(" ")[2]
+                title = article.find('div', class_='MuiBox-root mui-style-1haxbqe').text.strip() if article.find('div', class_='MuiBox-root mui-style-1haxbqe')else None
+                price = article.find('div', class_='MuiBox-root mui-style-1fhgjcy').text.strip() if article.find('div', class_='MuiBox-root mui-style-1fhgjcy') else None
+                link = article.find('a', class_='mui-style-1p9d91s')['href'] if article.find('a', class_='mui-style-1p9d91s') else None
+                details = article.find('span', class_='MuiTypography-root MuiTypography-body1 e2xugjn1 mui-style-zgvric').text.strip() if article.find('span', class_='MuiTypography-root MuiTypography-body1 e2xugjn1 mui-style-zgvric') else None
+                location = article.find('span', class_='MuiTypography-root MuiTypography-body2 e2xugjn3 mui-style-x0om0o').text.strip() if article.find('span', class_='MuiTypography-root MuiTypography-body2 e2xugjn3 mui-style-x0om0o') else None
+                #id = article['id'].split('card_')[1]
+                div = soup.find('div', {'data-testid': 'listing-list'})
+                id = article.get('data-private-srp-listing-item-id')
+
+                if details is None:
+                    details_withoutapostrphe= "Not found"
+                else:
+                    details_withoutapostrphe = details.replace("'","")
+                    #On tronque car il a parfois trop de texte
+                    details_withoutapostrphe = tronquer_chaine(details_withoutapostrphe)
+   
+
+                #years = details_withoutapostrphe.split(" ")[0]
+                #kilometers = details.split(" ")[2]
+                years = "not found"
+                kilometers = "not found"
 
                 data_list.append([title, price, 'https://anibis.ch'+link, id, years, kilometers, location])
 
-            if len(nextButton) < 1 :
+            if len(nextButton) > 0 :
                 print("il y n'y a pas de page suivante")
                 hasNextPage = False
                         # Enregistrement des données dans un fichier CSV
@@ -228,7 +234,7 @@ while True:
             else:
                 page = page + 1
                 # Concatenate url and page as a string 
-                url = url_base + '&pi=' + str(page)
+                url = url_base.replace("page=1", "page="+str(page))
                 retries = 3
                 while (retries > 0):
                     soup = getSoup(url)
