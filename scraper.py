@@ -102,6 +102,7 @@ def send_email(subject, content, isFirstNotif):
             <thead>
                 <tr>
                     <th>Baisse</th>
+                    <th>Image</th>
                     <th>ID</th>
                     <th>Titre</th>
                     <th>Prix</th>
@@ -168,7 +169,8 @@ def load_csv_to_dict(filename):
             years = row[4]
             kilometers = row[5]
             location = row[6]
-            data_dict[id] = (title, price, link, years, kilometers, location)
+            image_url = row[7]
+            data_dict[id] = (title, price, link, years, kilometers, location, image_url)
     return data_dict
 
 send_email("Scrapper Starting", "<p>Scrapping starting now and will send you notification when price are dropping</p> <p>INTERVAL is set to "+str(INTERVAL)+" second, with more or less "+str(INTERVAL_RANDOMIZE)+" sec</p>", True)
@@ -204,8 +206,14 @@ while True:
                 details = article.find('span', class_='MuiTypography-root MuiTypography-body1 e2xugjn1 mui-style-zgvric').text.strip() if article.find('span', class_='MuiTypography-root MuiTypography-body1 e2xugjn1 mui-style-zgvric') else None
                 location = article.find('span', class_='MuiTypography-root MuiTypography-body2 e2xugjn3 mui-style-x0om0o').text.strip() if article.find('span', class_='MuiTypography-root MuiTypography-body2 e2xugjn3 mui-style-x0om0o') else None
                 #id = article['id'].split('card_')[1]
-                div = soup.find('div', {'data-testid': 'listing-list'})
                 id = article.get('data-private-srp-listing-item-id')
+                img_tag = article.find('img')
+
+                # Obtenir l'URL de l'image
+                if img_tag:
+                    image_url = img_tag.get('src')
+                else:
+                    image_url = "https://aeroclub-issoire.fr/wp-content/uploads/2020/05/image-not-found.jpg"
 
                 if details is None:
                     details_withoutapostrphe= "Not found"
@@ -220,7 +228,7 @@ while True:
                 years = "not found"
                 kilometers = "not found"
 
-                data_list.append([title, price, 'https://anibis.ch'+link, id, years, kilometers, location])
+                data_list.append([title, price, 'https://anibis.ch'+link, id, years, kilometers, location, image_url])
 
             if len(nextButton) > 0 :
                 print("il y n'y a pas de page suivante")
@@ -229,7 +237,7 @@ while True:
                 print("ouverture du fichier: "+articles_file)
                 with open(articles_file, 'w', newline='', encoding='utf-8') as file:
                     writer = csv.writer(file, delimiter=';')
-                    writer.writerow(["Title", "Price", "Link", "Id", "Year", "Km", "Location"])  # En-tête du CSV
+                    writer.writerow(["Title", "Price", "Link", "Id", "Year", "Km", "Location", "Image"])  # En-tête du CSV
                     writer.writerows(data_list)
             else:
                 page = page + 1
@@ -245,6 +253,7 @@ while True:
                         break
 
                 time.sleep(random.randint(2, 6))
+        new_articles_content = ""
         # Vérifier si le fichier 'last_articles.csv' existe
         print("test si fichier: "+last_articles_file+" existe")
         if os.path.exists(last_articles_file):
@@ -254,11 +263,11 @@ while True:
             first_csv = load_csv_to_dict(last_articles_file)
             print("lecture fichier "+articles_file)
             second_csv = load_csv_to_dict(articles_file)
-            new_articles_content = ""
+            
             # Comparer les deux dictionnaires
-            for id, (title, price, link, years, kilometers, location) in second_csv.items():
+            for id, (title, price, link, years, kilometers, location, image_url) in second_csv.items():
                 if id in first_csv:
-                    first_title, first_price, first_link, first_year, first_kilomenters, first_location = first_csv[id]
+                    first_title, first_price, first_link, first_year, first_kilomenters, first_location, first_image_url = first_csv[id]
                     if first_price != price:
                         first_price_nbr = convert_chf_to_number(first_price)
                         price_nbr = convert_chf_to_number(price)
@@ -267,10 +276,10 @@ while True:
                             discount = "{:,}".format(int(first_price_nbr-price_nbr)).replace(',', "'")
                             first_price_nbr_fmt = "{:,}".format(int(first_price_nbr)).replace(',', "'")
                             print(f'ID: "{id}" Le prix de "{title}" a changé de {first_price} à {price}. Lien: {link}')
-                            email_content += f'<tr> <td><span style="color: green;">-{discount} CHF </span></td><td><a href="{link}">{id}</a></td><td>{title} </td> <td>CHF {first_price_nbr_fmt}.-  --> {price}</td> <td>{kilometers}</td><td>{years}</td><td>{location}</td></tr>'
+                            email_content += f'<tr> <td><span style="color: green;">-{discount} CHF </span></td><td><img src="{image_url}" width="100" height="60""></img></td><td><a href="{link}">{id}</a></td><td>{title} </td> <td>CHF {first_price_nbr_fmt}.-  --> {price}</td> <td>{kilometers}</td><td>{years}</td><td>{location}</td></tr>'
                 elif NEW_ARTICLES_NOTIF:
                     print(f'ID: "{id}" Nouvel élément trouvé dans le second CSV: "{title}" avec le prix {price}. Lien: {link}')
-                    new_articles_content += f'<tr> <td><span style="color: red;">New</span></td><td><a href="{link}">{id}</a></td><td>{title} </td> <td>{price}</td><td>{kilometers}</td><td>{years}</td><td>{location}</td></tr>'
+                    new_articles_content += f'<tr> <td><span style="color: red;">New</span></td><td><img src="{image_url}" width="100" height="60""></img></td><td><a href="{link}">{id}</a></td><td>{title} </td> <td>{price}</td><td>{kilometers}</td><td>{years}</td><td>{location}</td></tr>'
                     
         else:
             print("Le fichier 'last_articles.csv' n'existe pas, je le crée")
